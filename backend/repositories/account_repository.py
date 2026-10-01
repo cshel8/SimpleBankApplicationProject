@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from decimal import Decimal
 
 from bson import ObjectId
@@ -40,16 +41,19 @@ class AccountRepository:
         customer_object_id = self._to_object_id(customer_id)
         if customer_object_id is None:
             return None
+        created_at = datetime.now(timezone.utc)
         result = self.collection.insert_one({
             "customer_id": customer_object_id,
             "account_type": account_type,
             "balance": Decimal128(balance),
+            "created_at": created_at,
         })
         return Account(
             id=str(result.inserted_id),
             customer_id=customer_id,
             account_type=account_type,
             balance=balance,
+            created_at=created_at,
         )
 
     def update_account(self, account_id: str, account_type: str) -> Account | None:
@@ -203,4 +207,13 @@ class AccountRepository:
             customer_id=str(account["customer_id"]),
             account_type=account["account_type"],
             balance=balance,
+            created_at=AccountRepository._to_utc(account.get("created_at")),
         )
+
+    @staticmethod
+    def _to_utc(value: datetime | None) -> datetime | None:
+        if value is None:
+            return None
+        if value.tzinfo is None:
+            return value.replace(tzinfo=timezone.utc)
+        return value.astimezone(timezone.utc)

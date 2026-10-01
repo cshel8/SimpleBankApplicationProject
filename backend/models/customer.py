@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from pydantic import BaseModel, Field
 
 class CustomerCreate( BaseModel ):
@@ -9,6 +11,7 @@ class Customer(BaseModel):
     id: str
     name: str
     username: str
+    created_at: datetime | None = None
 
 class CustomerUpdate( BaseModel ):
     name: str | None = Field(default=None, min_length=1, max_length=100)

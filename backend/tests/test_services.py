@@ -1,6 +1,9 @@
 from decimal import Decimal
+from datetime import datetime, timezone
 
 import pytest
+from bson import ObjectId
+from bson.decimal128 import Decimal128
 from pydantic import ValidationError
 
 from exceptions.account_exceptions import InsufficientFundsException
@@ -8,6 +11,8 @@ from exceptions.customer_exceptions import CustomerNotFoundException, DuplicateU
 from models.account import Account, AccountCreate, AccountUpdate, TransferCreate
 from models.audit import AuditRecord
 from models.customer import Customer, CustomerCreate, CustomerUpdate
+from repositories.account_repository import AccountRepository
+from repositories.customer_repository import CustomerRepository
 from services.account_service import AccountService
 from services.audit_service import AuditService
 from services.customer_service import CustomerService
@@ -22,7 +27,7 @@ class FakeCustomerRepository:
     def get_customer_by_id(self, customer_id): return self.customers.get(customer_id)
     def get_customer_by_username(self, username): return next((c for c in self.customers.values() if c.username == username), None)
     def create_customer(self, name, username, password_hash):
-        customer = Customer(id=f"customer-{len(self.customers) + 1}", name=name, username=username)
+        customer = Customer(id=f"customer-{len(self.customers) + 1}", name=name, username=username, created_at=datetime.now(timezone.utc))
         self.customers[customer.id] = customer
         self.password_hashes[customer.id] = password_hash
         return customer
@@ -42,7 +47,7 @@ class FakeAccountRepository:
     def get_premium_accounts(self, threshold): return [a for a in self.accounts.values() if a.balance >= threshold]
     def get_account_by_id(self, account_id): return self.accounts.get(account_id)
     def create_account(self, customer_id, account_type, balance):
-        account = Account(id=f"account-{len(self.accounts) + 1}", customer_id=customer_id, account_type=account_type, balance=balance)
+        account = Account(id=f"account-{len(self.accounts) + 1}", customer_id=customer_id, account_type=account_type, balance=balance, created_at=datetime.now(timezone.utc))
         self.accounts[account.id] = account
         return account
     def update_account(self, account_id, account_type):
@@ -95,6 +100,7 @@ def services():
 def test_customer_crud_duplicate_search_and_cascade(services):
     customer_service, account_service, _ = services
     customer = customer_service.create_customer(CustomerCreate(name="Jane Smith", username="janesmith", password="securepass123"))
+    assert customer.created_at is not None and customer.created_at.tzinfo == timezone.utc
     assert customer_service.update_customer(customer.id, CustomerUpdate(name="Jane Updated")).name == "Jane Updated"
     assert customer_service.search_customers("JANE") == [customer]
     assert customer_service.customer_repository.password_hashes[customer.id] != "securepass123"
@@ -109,6 +115,7 @@ def test_account_crud_deposit_withdraw_filter_and_audit(services):
     customer_service, account_service, audits = services
     customer = customer_service.create_customer(CustomerCreate(name="Jane", username="jane", password="securepass123"))
     account = account_service.create_account(customer.id, AccountCreate(account_type="savings", opening_balance=Decimal("100")))
+    assert account.created_at is not None and account.created_at.tzinfo == timezone.utc
     assert account_service.update_account(account.id, AccountUpdate(account_type="checking")).account_type == "checking"
     assert account_service.deposit(account.id, Decimal("25")).balance == Decimal("125")
     assert account_service.withdraw(account.id, Decimal("20")).balance == Decimal("105")
@@ -141,3 +148,26 @@ def test_account_creation_requires_existing_customer_and_account_type_is_limited
         account_service.create_account("missing", AccountCreate())
     with pytest.raises(ValidationError):
         AccountCreate(account_type="premium")
+
+
+class InsertOnlyCollection:
+    def __init__(self): self.document = None
+    def insert_one(self, document):
+        self.document = document
+        return type("InsertResult", (), {"inserted_id": ObjectId()})()
+
+
+def test_repository_created_at_and_legacy_document_handling():
+    customer_collection, account_collection = InsertOnlyCollection(), InsertOnlyCollection()
+    customer_repository = CustomerRepository.__new__(CustomerRepository)
+    account_repository = AccountRepository.__new__(AccountRepository)
+    customer_repository.collection, account_repository.collection = customer_collection, account_collection
+
+    customer = customer_repository.create_customer("Jane", "jane", "hash")
+    account = account_repository.create_account(str(ObjectId()), "checking", Decimal("10.00"))
+    assert customer.created_at is not None and customer_collection.document["created_at"] == customer.created_at
+    assert account is not None and account.created_at is not None and account_collection.document["created_at"] == account.created_at
+
+    legacy_customer = CustomerRepository._to_customer({"_id": ObjectId(), "name": "Legacy", "username": "legacy"})
+    legacy_account = AccountRepository._to_account({"_id": ObjectId(), "customer_id": ObjectId(), "account_type": "checking", "balance": Decimal128("1.00")})
+    assert legacy_customer.created_at is None and legacy_account.created_at is None
