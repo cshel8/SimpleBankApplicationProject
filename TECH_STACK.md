@@ -2,6 +2,8 @@
 
 - **Python**: application language.
 - **FastAPI**: HTTP framework and automatic OpenAPI/Swagger documentation.
+- **React / Vite**: local frontend development environment, connected to FastAPI over HTTP.
+- **CORS middleware**: permits the two local Vite development origins to call the API from a browser.
 - **Pydantic**: request validation and response serialization.
 - **Uvicorn**: ASGI server used to run the API.
 - **pwdlib / Argon2**: password hashing.

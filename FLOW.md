@@ -4,6 +4,8 @@ The API follows one path for each request:
 
 `Client / Swagger / Postman → Controller → Service → Repository → MongoDB Atlas → Repository → Service → Controller → HTTP response`
 
+The local React/Vite frontend communicates with FastAPI over HTTP. CORS middleware permits browser requests from `http://localhost:5173` and `http://127.0.0.1:5173`; it does not change the Controller → Service → Repository flow.
+
 - **Controller**: owns HTTP routes, reads request models, and turns application exceptions into status codes.
 - **Service**: owns application rules, such as unique usernames, sufficient funds, and deleting a customer's accounts.
 - **Repository**: reads and changes MongoDB collections. It owns BSON `ObjectId` and `Decimal128` conversion and has no HTTP code.
