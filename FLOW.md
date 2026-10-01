@@ -2,9 +2,9 @@
 
 The API follows one path for each request:
 
-`React component → DataService / fetch → HTTP → FastAPI Controller → Service → Repository → MongoDB Atlas → JSON response → React state / render`
+`React Customers page → DataService / fetch → HTTP → FastAPI Controller → Service → Repository → MongoDB Atlas → JSON response → React state / render`
 
-The local React/Vite frontend communicates with FastAPI over HTTP. `DataService.js` calls the API using browser `fetch()`, and `App.jsx` stores the JSON result in React state for rendering. CORS middleware permits browser requests from `http://localhost:5173` and `http://127.0.0.1:5173`; it does not change the Controller → Service → Repository flow.
+The local React/Vite frontend communicates with FastAPI over HTTP. `App.jsx` provides the reusable header, navigation, footer, and the current Home or Customers page. `Customers.jsx` calls `DataService.js` using browser `fetch()` and stores the JSON result in React state for rendering through `CustomerList.jsx`. CORS middleware permits browser requests from `http://localhost:5173` and `http://127.0.0.1:5173`; it does not change the Controller → Service → Repository flow.
 
 - **Controller**: owns HTTP routes, reads request models, and turns application exceptions into status codes.
 - **Service**: owns application rules, such as unique usernames, sufficient funds, and deleting a customer's accounts.

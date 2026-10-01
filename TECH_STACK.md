@@ -2,7 +2,7 @@
 
 - **Python**: application language.
 - **FastAPI**: HTTP framework and automatic OpenAPI/Swagger documentation.
-- **React / Vite**: local frontend development environment, connected to FastAPI over HTTP.
+- **React / Vite**: local frontend development environment, connected to FastAPI over HTTP. It currently uses reusable layout components and simple state-based navigation between Home and Customers; React Router is not needed for these two views yet.
 - **Browser fetch()**: native frontend API used by `DataService.js` for REST requests to FastAPI.
 - **CORS middleware**: permits the two local Vite development origins to call the API from a browser.
 - **Pydantic**: request validation and response serialization.
