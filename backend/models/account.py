@@ -1,3 +1,4 @@
+from datetime import datetime
 from decimal import Decimal
 from typing import Literal
 
@@ -18,6 +19,7 @@ class Account(BaseModel):
     customer_id: str
     account_type: Literal["checking", "savings"]
     balance: Decimal
+    created_at: datetime | None = None
 
 
 class MoneyAmount(BaseModel):

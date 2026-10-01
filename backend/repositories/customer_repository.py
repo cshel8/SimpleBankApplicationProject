@@ -1,4 +1,5 @@
 import re
+from datetime import datetime, timezone
 
 from bson import ObjectId
 from bson.errors import InvalidId
@@ -33,16 +34,19 @@ class CustomerRepository:
         username: str,
         password_hash: str
     ) -> Customer:
+        created_at = datetime.now(timezone.utc)
         result = self.collection.insert_one({
             "name": name,
             "username": username,
             "password_hash": password_hash,
+            "created_at": created_at,
         })
 
         return Customer(
             id=str(result.inserted_id),
             name=name,
             username=username,
+            created_at=created_at,
         )
 
     def get_customer_by_id(self, customer_id: str) -> Customer | None:
@@ -91,4 +95,13 @@ class CustomerRepository:
             id=str(customer["_id"]),
             name=customer["name"],
             username=customer["username"],
+            created_at=CustomerRepository._to_utc(customer.get("created_at")),
         )
+
+    @staticmethod
+    def _to_utc(value: datetime | None) -> datetime | None:
+        if value is None:
+            return None
+        if value.tzinfo is None:
+            return value.replace(tzinfo=timezone.utc)
+        return value.astimezone(timezone.utc)

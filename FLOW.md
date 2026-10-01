@@ -12,13 +12,13 @@ The API follows one path for each request:
 ## Customer flows
 
 - `GET /api/customers` and `GET /api/customers/{id}` call the customer service. A missing ID becomes `404 Not Found`.
-- `POST /api/customers` validates the body, checks the username, hashes the password, and stores the customer. A duplicate username becomes `409 Conflict`.
+- `POST /api/customers` validates the body, checks the username, hashes the password, and stores the customer with a backend-generated UTC `created_at`. A duplicate username becomes `409 Conflict`.
 - `PUT /api/customers/{id}` verifies the customer and username before updating it.
 - `DELETE /api/customers/{id}` first removes that customer's accounts, then removes the customer. A missing customer is `404`.
 
 ## Account flows
 
-- `POST /api/customers/{customer_id}/accounts` verifies that the customer exists before the account repository creates it. Account types are `checking` or `savings`.
+- `POST /api/customers/{customer_id}/accounts` verifies that the customer exists before the account repository creates it with a backend-generated UTC `created_at`. Account types are `checking` or `savings`.
 - Account GET, PUT, and DELETE requests pass through `AccountService`; missing accounts become `404`.
 - `DELETE /api/customers/{customer_id}/accounts/{account_id}` also verifies that the account belongs to that customer.
 
