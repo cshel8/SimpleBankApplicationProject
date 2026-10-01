@@ -1,0 +1,2 @@
+class AuditRecordNotFoundException(Exception):
+    pass

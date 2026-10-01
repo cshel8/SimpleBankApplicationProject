@@ -5,4 +5,7 @@
 - **Pydantic**: request validation and response serialization.
 - **Uvicorn**: ASGI server used to run the API.
 - **pwdlib / Argon2**: password hashing.
-- **Temporary in-memory storage**: Python lists used by repositories while no database is configured.
+- **MongoDB Atlas / PyMongo**: persistent document storage accessed through repositories.
+- **BSON ObjectId and Decimal128**: MongoDB ID and monetary-storage formats, converted at repository boundaries to strings and Python `Decimal` values.
+- **MongoDB sessions/transactions**: keep each money movement and its audit record atomic.
+- **python-dotenv**: loads local MongoDB configuration from ignored environment files.

@@ -1,9 +1,16 @@
-from fastapi import APIRouter, HTTPException
+from decimal import Decimal
+
+from fastapi import APIRouter, HTTPException, Query
 
 from dependencies import account_service
-from exceptions.account_exceptions import AccountNotFoundException, InsufficientFundsException, InvalidAmountException
+from exceptions.account_exceptions import (
+    AccountNotFoundException,
+    InsufficientFundsException,
+    InvalidAmountException,
+    SameAccountTransferException,
+)
 from exceptions.customer_exceptions import CustomerNotFoundException
-from models.account import Account, AccountCreate, AccountUpdate, MoneyAmount
+from models.account import Account, AccountCreate, AccountUpdate, MoneyAmount, TransferCreate, TransferResult
 
 router = APIRouter(prefix="/api", tags=["Accounts"])
 
@@ -22,6 +29,41 @@ def account_error_to_http(error: Exception) -> HTTPException:
 def get_all_accounts():
     return account_service.get_all_accounts()
 
+@router.get(
+    "/accounts/premium",
+    response_model=list[Account],
+    summary="Get accounts at or above a balance threshold",
+    responses={400: {"description": "Threshold cannot be negative."}},
+)
+def get_premium_accounts(
+    threshold: Decimal = Query(description="Minimum balance, inclusive"),
+):
+    try:
+        return account_service.get_premium_accounts(threshold)
+    except InvalidAmountException as error:
+        raise account_error_to_http(error)
+
+@router.post(
+    "/accounts/transfer",
+    response_model=TransferResult,
+    summary="Transfer money between accounts",
+    responses={
+        400: {"description": "Source and destination accounts must be different."},
+        404: {"description": "Account not found."},
+        409: {"description": "Insufficient funds."},
+    },
+)
+def transfer(transfer_data: TransferCreate):
+    try:
+        return account_service.transfer(transfer_data)
+    except (
+        AccountNotFoundException,
+        InsufficientFundsException,
+        InvalidAmountException,
+        SameAccountTransferException,
+    ) as error:
+        raise account_error_to_http(error)
+
 
 @router.get(
     "/accounts/{account_id}",
@@ -29,7 +71,7 @@ def get_all_accounts():
     summary="Get an account by ID",
     responses={404: {"description": "Account not found."}},
 )
-def get_account_by_id(account_id: int):
+def get_account_by_id(account_id: str):
     try:
         return account_service.get_account_by_id(account_id)
     except AccountNotFoundException as error:
@@ -43,7 +85,7 @@ def get_account_by_id(account_id: int):
     summary="Create an account for a customer",
     responses={404: {"description": "Customer not found."}},
 )
-def create_account(customer_id: int, account_data: AccountCreate):
+def create_account(customer_id: str, account_data: AccountCreate):
     try:
         return account_service.create_account(customer_id, account_data)
     except CustomerNotFoundException as error:
@@ -56,7 +98,7 @@ def create_account(customer_id: int, account_data: AccountCreate):
     summary="Update an account type",
     responses={404: {"description": "Account not found."}},
 )
-def update_account(account_id: int, account_data: AccountUpdate):
+def update_account(account_id: str, account_data: AccountUpdate):
     try:
         return account_service.update_account(account_id, account_data)
     except AccountNotFoundException as error:
@@ -69,7 +111,7 @@ def update_account(account_id: int, account_data: AccountUpdate):
     summary="Delete an account",
     responses={404: {"description": "Account not found."}},
 )
-def delete_account(account_id: int):
+def delete_account(account_id: str):
     try:
         account_service.delete_account(account_id)
     except AccountNotFoundException as error:
@@ -82,7 +124,7 @@ def delete_account(account_id: int):
     summary="Delete one account belonging to a customer",
     responses={404: {"description": "Account not found for this customer."}},
 )
-def delete_customer_account(customer_id: int, account_id: int):
+def delete_customer_account(customer_id: str, account_id: str):
     try:
         account_service.delete_account(account_id, customer_id)
     except AccountNotFoundException as error:
@@ -95,7 +137,7 @@ def delete_customer_account(customer_id: int, account_id: int):
     summary="Deposit money into an account",
     responses={404: {"description": "Account not found."}},
 )
-def deposit(account_id: int, money: MoneyAmount):
+def deposit(account_id: str, money: MoneyAmount):
     try:
         return account_service.deposit(account_id, money.amount)
     except (AccountNotFoundException, InvalidAmountException) as error:
@@ -111,7 +153,7 @@ def deposit(account_id: int, money: MoneyAmount):
         409: {"description": "Insufficient funds."},
     },
 )
-def withdraw(account_id: int, money: MoneyAmount):
+def withdraw(account_id: str, money: MoneyAmount):
     try:
         return account_service.withdraw(account_id, money.amount)
     except (AccountNotFoundException, InvalidAmountException, InsufficientFundsException) as error:

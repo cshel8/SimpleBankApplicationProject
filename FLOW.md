@@ -2,11 +2,11 @@
 
 The API follows one path for each request:
 
-`Client / Swagger / Postman → Controller → Service → Repository → temporary data → Repository → Service → Controller → HTTP response`
+`Client / Swagger / Postman → Controller → Service → Repository → MongoDB Atlas → Repository → Service → Controller → HTTP response`
 
 - **Controller**: owns HTTP routes, reads request models, and turns application exceptions into status codes.
 - **Service**: owns application rules, such as unique usernames, sufficient funds, and deleting a customer's accounts.
-- **Repository**: reads and changes the in-memory lists. It has no HTTP code.
+- **Repository**: reads and changes MongoDB collections. It owns BSON `ObjectId` and `Decimal128` conversion and has no HTTP code.
 - **Models**: define request and response shapes. Stored customer data includes a password hash, while API responses use `Customer` and never include it.
 
 ## Customer flows
@@ -18,12 +18,16 @@ The API follows one path for each request:
 
 ## Account flows
 
-- `POST /api/customers/{customer_id}/accounts` verifies that the customer exists before the account repository creates it.
+- `POST /api/customers/{customer_id}/accounts` verifies that the customer exists before the account repository creates it. Account types are `checking` or `savings`.
 - Account GET, PUT, and DELETE requests pass through `AccountService`; missing accounts become `404`.
 - `DELETE /api/customers/{customer_id}/accounts/{account_id}` also verifies that the account belongs to that customer.
 
 ## Deposit and withdraw
 
-`POST /api/accounts/{id}/deposit` and `/withdraw` send a positive decimal amount to `AccountService`. Deposit adds to the balance. Withdraw also checks the balance; insufficient funds becomes `409 Conflict`. Pydantic rejects malformed or non-positive request amounts with `422 Unprocessable Entity` before the controller runs.
+`POST /api/accounts/{id}/deposit` and `/withdraw` send a positive decimal amount to `AccountService`. Their repositories update the Decimal128 balance and insert the matching audit record in one MongoDB transaction. Withdraw checks the balance; insufficient funds becomes `409 Conflict`.
 
-Application exceptions travel upward from service to controller, where they become HTTP responses. Because controllers only know services and repositories isolate storage, a later MongoDB repository can replace the temporary lists with little or no controller change.
+`POST /api/accounts/transfer` validates both accounts, sufficient funds, and different account IDs. The repository performs the debit, credit, and transfer audit insert in one MongoDB transaction.
+
+`GET /api/customers/search`, `GET /api/accounts/premium`, and `GET /api/transactions` query MongoDB directly. Transaction history can also be read for one account.
+
+Application exceptions travel upward from service to controller, where they become HTTP responses. Controllers remain independent of BSON details because repositories isolate MongoDB storage concerns.

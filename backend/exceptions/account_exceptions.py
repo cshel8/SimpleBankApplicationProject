@@ -8,3 +8,7 @@ class InvalidAmountException(Exception):
 
 class InsufficientFundsException(Exception):
     pass
+
+
+class SameAccountTransferException(Exception):
+    pass

@@ -16,7 +16,10 @@ class CustomerService:
     def get_all_customers( self ) -> list[ Customer ]:
         return self.customer_repository.get_all_customers()
 
-    def get_customer_by_id( self, customer_id: int ) -> Customer:
+    def search_customers(self, query: str) -> list[Customer]:
+        return self.customer_repository.search_customers(query)
+
+    def get_customer_by_id( self, customer_id: str ) -> Customer:
         customer = self.customer_repository.get_customer_by_id( customer_id )
 
         if customer is None:
@@ -35,7 +38,7 @@ class CustomerService:
             password_hash
         )
 
-    def update_customer( self, customer_id: int, customer_data: CustomerUpdate ) -> Customer:
+    def update_customer( self, customer_id: str, customer_data: CustomerUpdate ) -> Customer:
 
         customer = self.customer_repository.get_customer_by_id( customer_id )
         if customer is None:
@@ -55,7 +58,7 @@ class CustomerService:
             raise CustomerNotFoundException("Customer not found.")
         return updated_customer
 
-    def delete_customer(self, customer_id: int) -> None:
+    def delete_customer(self, customer_id: str) -> None:
         customer = self.customer_repository.get_customer_by_id(customer_id)
         if customer is None:
             raise CustomerNotFoundException("Customer not found.")
