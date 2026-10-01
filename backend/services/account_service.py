@@ -1,32 +1,56 @@
 from decimal import Decimal
 
-from exceptions.account_exceptions import AccountNotFoundException, InsufficientFundsException, InvalidAmountException
+from exceptions.account_exceptions import (
+    AccountNotFoundException,
+    InsufficientFundsException,
+    InvalidAmountException,
+    SameAccountTransferException,
+)
 from exceptions.customer_exceptions import CustomerNotFoundException
-from models.account import Account, AccountCreate, AccountUpdate
+from models.account import Account, AccountCreate, AccountUpdate, TransferCreate, TransferResult
 from repositories.account_repository import AccountRepository
 from repositories.customer_repository import CustomerRepository
+from services.audit_service import AuditService
 
 
 class AccountService:
-    def __init__(self, account_repository: AccountRepository, customer_repository: CustomerRepository):
+    def __init__(
+        self,
+        account_repository: AccountRepository,
+        customer_repository: CustomerRepository,
+        audit_service: AuditService,
+    ):
         self.account_repository = account_repository
         self.customer_repository = customer_repository
+        self.audit_service = audit_service
 
     def get_all_accounts(self) -> list[Account]:
         return self.account_repository.get_all_accounts()
 
-    def get_account_by_id(self, account_id: int) -> Account:
+    def get_premium_accounts(self, threshold: Decimal) -> list[Account]:
+        if threshold < 0:
+            raise InvalidAmountException("Threshold cannot be negative.")
+        return self.account_repository.get_premium_accounts(threshold)
+
+    def get_account_by_id(self, account_id: str) -> Account:
         account = self.account_repository.get_account_by_id(account_id)
         if account is None:
             raise AccountNotFoundException("Account not found.")
         return account
 
-    def create_account(self, customer_id: int, account_data: AccountCreate) -> Account:
+    def create_account(self, customer_id: str, account_data: AccountCreate) -> Account:
         if self.customer_repository.get_customer_by_id(customer_id) is None:
             raise CustomerNotFoundException("Customer not found.")
-        return self.account_repository.create_account(customer_id, account_data.account_type, account_data.opening_balance)
+        account = self.account_repository.create_account(
+            customer_id,
+            account_data.account_type,
+            account_data.opening_balance,
+        )
+        if account is None:
+            raise CustomerNotFoundException("Customer not found.")
+        return account
 
-    def update_account(self, account_id: int, account_data: AccountUpdate) -> Account:
+    def update_account(self, account_id: str, account_data: AccountUpdate) -> Account:
         account = self.get_account_by_id(account_id)
         if account_data.account_type is None:
             return account
@@ -35,29 +59,61 @@ class AccountService:
             raise AccountNotFoundException("Account not found.")
         return updated_account
 
-    def delete_account(self, account_id: int, customer_id: int | None = None) -> None:
+    def delete_account(self, account_id: str, customer_id: str | None = None) -> None:
         account = self.get_account_by_id(account_id)
         if customer_id is not None and account.customer_id != customer_id:
             raise AccountNotFoundException("Account not found for this customer.")
         self.account_repository.delete_account(account_id)
 
-    def deposit(self, account_id: int, amount: Decimal) -> Account:
+    def deposit(self, account_id: str, amount: Decimal) -> Account:
         self._validate_amount(amount)
-        account = self.get_account_by_id(account_id)
-        updated_account = self.account_repository.update_balance(account_id, account.balance + amount)
+        self.get_account_by_id(account_id)
+        updated_account = self.account_repository.deposit(
+            account_id,
+            amount,
+            self.audit_service.audit_repository,
+        )
         if updated_account is None:
             raise AccountNotFoundException("Account not found.")
         return updated_account
 
-    def withdraw(self, account_id: int, amount: Decimal) -> Account:
+    def withdraw(self, account_id: str, amount: Decimal) -> Account:
         self._validate_amount(amount)
         account = self.get_account_by_id(account_id)
         if amount > account.balance:
             raise InsufficientFundsException("Insufficient funds.")
-        updated_account = self.account_repository.update_balance(account_id, account.balance - amount)
+        updated_account = self.account_repository.withdraw(
+            account_id,
+            amount,
+            self.audit_service.audit_repository,
+        )
         if updated_account is None:
-            raise AccountNotFoundException("Account not found.")
+            self.get_account_by_id(account_id)
+            raise InsufficientFundsException("Insufficient funds.")
         return updated_account
+
+    def transfer(self, transfer_data: TransferCreate) -> TransferResult:
+        self._validate_amount(transfer_data.amount)
+        source_account = self.get_account_by_id(transfer_data.from_account_id)
+        self.get_account_by_id(transfer_data.to_account_id)
+        if transfer_data.from_account_id == transfer_data.to_account_id:
+            raise SameAccountTransferException("Source and destination accounts must be different.")
+        if transfer_data.amount > source_account.balance:
+            raise InsufficientFundsException("Insufficient funds.")
+
+        updated_accounts = self.account_repository.transfer(
+            transfer_data.from_account_id,
+            transfer_data.to_account_id,
+            transfer_data.amount,
+            self.audit_service.audit_repository,
+        )
+        if updated_accounts is None:
+            raise AccountNotFoundException("Account not found.")
+        source_account, destination_account = updated_accounts
+        return TransferResult(
+            from_account=source_account,
+            to_account=destination_account,
+        )
 
     @staticmethod
     def _validate_amount(amount: Decimal) -> None:

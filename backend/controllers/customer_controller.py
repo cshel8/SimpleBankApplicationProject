@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 from exceptions.customer_exceptions import ( 
     CustomerNotFoundException, 
     DuplicateUsernameException 
@@ -13,12 +13,20 @@ def get_all_customers():
     return customer_service.get_all_customers()
 
 @router.get(
+    "/customers/search",
+    response_model=list[Customer],
+    summary="Search customers by name or username",
+)
+def search_customers(query: str = Query(min_length=1, description="Text to find in a customer name or username")):
+    return customer_service.search_customers(query)
+
+@router.get(
     "/customers/{customer_id}",
     response_model=Customer,
     summary="Get a customer by ID",
     responses={404: {"description": "Customer not found."}},
 )
-def get_customer_by_id( customer_id: int ):
+def get_customer_by_id( customer_id: str ):
     try:
         return customer_service.get_customer_by_id( customer_id )
     except CustomerNotFoundException:
@@ -46,7 +54,7 @@ def create_customer( customer_data: CustomerCreate ):
         409: {"description": "Username already exists."},
     },
 )
-def update_customer( customer_id: int, customer_data: CustomerUpdate ):
+def update_customer( customer_id: str, customer_data: CustomerUpdate ):
     try:
         return customer_service.update_customer( customer_id, customer_data )
 
@@ -63,7 +71,7 @@ def update_customer( customer_id: int, customer_data: CustomerUpdate ):
     summary="Delete a customer and their accounts",
     responses={404: {"description": "Customer not found."}},
 )
-def delete_customer(customer_id: int):
+def delete_customer(customer_id: str):
     try:
         customer_service.delete_customer(customer_id)
     except CustomerNotFoundException:

@@ -1,23 +1,35 @@
 from decimal import Decimal
+from typing import Literal
 
 from pydantic import BaseModel, Field
 
 
 class AccountCreate(BaseModel):
-    account_type: str = Field(default="checking", min_length=1, max_length=30)
+    account_type: Literal["checking", "savings"] = "checking"
     opening_balance: Decimal = Field(default=Decimal("0.00"), ge=0, max_digits=12, decimal_places=2)
 
 
 class AccountUpdate(BaseModel):
-    account_type: str | None = Field(default=None, min_length=1, max_length=30)
+    account_type: Literal["checking", "savings"] | None = None
 
 
 class Account(BaseModel):
-    id: int
-    customer_id: int
-    account_type: str
+    id: str
+    customer_id: str
+    account_type: Literal["checking", "savings"]
     balance: Decimal
 
 
 class MoneyAmount(BaseModel):
     amount: Decimal = Field(gt=0, max_digits=12, decimal_places=2)
+
+
+class TransferCreate(BaseModel):
+    from_account_id: str
+    to_account_id: str
+    amount: Decimal = Field(gt=0, max_digits=12, decimal_places=2)
+
+
+class TransferResult(BaseModel):
+    from_account: Account
+    to_account: Account

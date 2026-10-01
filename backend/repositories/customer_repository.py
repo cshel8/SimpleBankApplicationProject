@@ -1,10 +1,31 @@
-from models.customer import Customer, CustomerStored
-from utilities.all_data import customers
+import re
+
+from bson import ObjectId
+from bson.errors import InvalidId
+from pymongo import ReturnDocument
+
+from database.mongodb import database
+from models.customer import Customer
 
 
 class CustomerRepository:
+    def __init__(self):
+        self.collection = database["customers"]
+
     def get_all_customers(self) -> list[Customer]:
-        return customers
+        return [self._to_customer(customer) for customer in self.collection.find({})]
+
+    def search_customers(self, query: str) -> list[Customer]:
+        escaped_query = re.escape(query)
+        return [
+            self._to_customer(customer)
+            for customer in self.collection.find({
+                "$or": [
+                    {"name": {"$regex": escaped_query, "$options": "i"}},
+                    {"username": {"$regex": escaped_query, "$options": "i"}},
+                ]
+            })
+        ]
 
     def create_customer(
         self,
@@ -12,57 +33,62 @@ class CustomerRepository:
         username: str,
         password_hash: str
     ) -> Customer:
-
-        new_id = max((customer.id for customer in customers), default=0) + 1
-
-        new_customer = CustomerStored(
-            id=new_id,
-            name=name,
-            username=username,
-            password_hash=password_hash
-        )
-
-        customers.append(new_customer)
+        result = self.collection.insert_one({
+            "name": name,
+            "username": username,
+            "password_hash": password_hash,
+        })
 
         return Customer(
-            id=new_customer.id,
-            name=new_customer.name,
-            username=new_customer.username
+            id=str(result.inserted_id),
+            name=name,
+            username=username,
         )
 
-    def get_customer_by_id(self, customer_id: int) -> Customer | None:
-        for customer in customers:
-            if customer.id == customer_id:
-                return customer
-        return None
+    def get_customer_by_id(self, customer_id: str) -> Customer | None:
+        object_id = self._to_object_id(customer_id)
+        if object_id is None:
+            return None
+        customer = self.collection.find_one({"_id": object_id})
+        return self._to_customer(customer) if customer is not None else None
 
     def get_customer_by_username(self, username: str) -> Customer | None:
-        for customer in customers:
-            if customer.username == username:
-                return customer
-        return None
+        customer = self.collection.find_one({"username": username})
+        return self._to_customer(customer) if customer is not None else None
 
     def update_customer(
         self,
-        customer_id: int,
+        customer_id: str,
         name: str,
         username: str
     ) -> Customer | None:
-        for customer in customers:
-            if customer.id == customer_id:
-                customer.name = name
-                customer.username = username
+        object_id = self._to_object_id(customer_id)
+        if object_id is None:
+            return None
+        customer = self.collection.find_one_and_update(
+            {"_id": object_id},
+            {"$set": {"name": name, "username": username}},
+            return_document=ReturnDocument.AFTER,
+        )
+        return self._to_customer(customer) if customer is not None else None
 
-                return Customer(
-                    id=customer.id,
-                    name=customer.name,
-                    username=customer.username
-                )
-        return None
+    def delete_customer(self, customer_id: str) -> bool:
+        object_id = self._to_object_id(customer_id)
+        if object_id is None:
+            return False
+        return self.collection.delete_one({"_id": object_id}).deleted_count == 1
 
-    def delete_customer(self, customer_id: int) -> bool:
-        for index, customer in enumerate(customers):
-            if customer.id == customer_id:
-                del customers[index]
-                return True
-        return False
+    @staticmethod
+    def _to_object_id(customer_id: str) -> ObjectId | None:
+        try:
+            return ObjectId(customer_id)
+        except (InvalidId, TypeError):
+            return None
+
+    @staticmethod
+    def _to_customer(customer: dict) -> Customer:
+        return Customer(
+            id=str(customer["_id"]),
+            name=customer["name"],
+            username=customer["username"],
+        )
