@@ -17,6 +17,20 @@ function Header({ activePage, onNavigate }) {
         >
           Customers
         </button>
+        <button
+          type="button"
+          aria-current={activePage === 'accounts' ? 'page' : undefined}
+          onClick={() => onNavigate('accounts')}
+        >
+          Accounts
+        </button>
+        <button
+          type="button"
+          aria-current={activePage === 'transactions' ? 'page' : undefined}
+          onClick={() => onNavigate('transactions')}
+        >
+          Transactions
+        </button>
       </nav>
     </header>
   )

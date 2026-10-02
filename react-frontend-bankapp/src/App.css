@@ -182,3 +182,34 @@
     border-right-color: var(--border);
   }
 }
+
+.currency-input {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg);
+}
+
+.currency-input-prefix {
+  padding-left: 8px;
+  color: var(--text);
+  user-select: none;
+}
+
+.currency-input input {
+  min-width: 0;
+  border: 0;
+  padding: 8px;
+  color: var(--text-h);
+  background: transparent;
+  font: inherit;
+}
+
+.currency-input input:focus {
+  outline: none;
+}
+
+.currency-input:focus-within {
+  border-color: var(--text);
+}
