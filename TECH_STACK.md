@@ -2,13 +2,16 @@
 
 - **Python**: application language.
 - **FastAPI**: HTTP framework and automatic OpenAPI/Swagger documentation.
-- **React / Vite**: local frontend development environment with state-based navigation, reusable Header/Footer components, Login/Register UI, and role-aware administrative navigation. React Router is not used.
+- **React / Vite**: frontend with state-based navigation, reusable Header/Footer components, Login/Register UI, and role-aware administrative navigation. React Router is not used. The production build is hosted as an S3 static website.
 - **JavaScript / HTML / CSS**: frontend component, form, layout, and responsive presentation technologies.
 - **Browser fetch()**: native frontend API used by `DataService.js` for public authentication requests and protected customer, account, and transaction requests to FastAPI.
 - **sessionStorage**: retains only the access token for the current browser session; React validates it through `/api/auth/me` before restoring user identity.
-- **CORS middleware**: permits the two local Vite development origins to call the API from a browser.
+- **CORS middleware**: permits the local Vite development origins and the deployed CloudFront frontend origin (configured at runtime) to call the API from a browser.
 - **Pydantic**: request validation and response serialization.
-- **Uvicorn**: ASGI server used to run the API.
+- **Uvicorn**: ASGI server used for local API development.
+- **Mangum**: ASGI adapter that runs the FastAPI application in AWS Lambda.
+- **AWS Lambda Python 3.13 + Lambda Function URL**: deployed HTTPS REST API runtime and public API endpoint. The Lambda timeout is configured to 30 seconds for MongoDB-backed requests.
+- **Amazon S3 static website hosting + CloudFront**: deployed React frontend origin and HTTPS/CDN delivery layer. CloudFront communicates with the S3 website endpoint over HTTP.
 - **pwdlib / Argon2**: password hashing.
 - **PyJWT**: signs and validates expiring JWT Bearer access tokens using environment-configured secret and algorithm settings.
 - **FastAPI dependencies / HTTP Bearer security**: validates authenticated identities and enforces the current admin-only administrative API boundary.
@@ -17,6 +20,6 @@
 - **BSON ObjectId and Decimal128**: MongoDB ID and monetary-storage formats, converted at repository boundaries to strings and Python `Decimal` values.
 - **BSON datetime / UTC timestamps**: repositories generate and persist `created_at` values for new customers and accounts.
 - **MongoDB sessions/transactions**: keep each money movement and its audit record atomic.
-- **python-dotenv**: loads local MongoDB configuration from ignored environment files.
+- **python-dotenv**: loads local configuration from ignored environment files; Lambda supplies equivalent MongoDB, JWT, and CORS runtime settings through environment variables.
 - **pytest**: backend automated testing framework.
 - **Swagger/OpenAPI and Postman**: API schema/documentation and manual REST-testing tools.

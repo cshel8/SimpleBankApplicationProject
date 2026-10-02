@@ -1,6 +1,25 @@
-.DS_Store
+# Environment and private notes
+.env
+.env.*
+WHAT_I_SHOULD_KNOW.md
+
+# Python runtime and test artifacts
 .venv/
 __pycache__/
 *.pyc
-.env
-WHAT_I_SHOULD_KNOW.md
+.pytest_cache/
+
+# Frontend build and dependency artifacts
+node_modules/
+dist/
+
+# Lambda deployment artifacts
+lambda-deployment*.zip
+lambda-package*/
+lambda-build*/
+
+# Operating system and editor files
+.DS_Store
+/.vscode/*
+!/.vscode/extensions.json
+/.idea/

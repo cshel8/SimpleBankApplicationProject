@@ -1,6 +1,14 @@
 # Request Flow
 
-The local application follows this path:
+## Deployed request path
+
+`Browser → HTTPS → CloudFront → HTTP S3 static website origin → React application in browser → HTTPS REST request → Lambda Function URL → Mangum → FastAPI Controller → Service → Repository / PyMongo → MongoDB Atlas`
+
+CloudFront delivers the deployed React/Vite build over HTTPS. The browser then calls the Lambda Function URL over HTTPS using the production `VITE_API_BASE_URL`. FastAPI CORS allows the deployed CloudFront origin through runtime configuration. Lambda runs the FastAPI ASGI application through Mangum and has a 30-second timeout for MongoDB-backed requests. Local React/Vite → Uvicorn development remains supported.
+
+## Application request flow
+
+The application follows this path:
 
 `React → DataService / native fetch → HTTP + Bearer JWT when required → FastAPI Controller → Service → Repository → PyMongo → MongoDB Atlas → JSON response → React state / render`
 
