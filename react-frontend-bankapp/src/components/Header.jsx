@@ -1,36 +1,31 @@
 function Header({ activePage, onNavigate }) {
+  const navigationItems = [
+    ['home', 'Home'],
+    ['customers', 'Customers'],
+    ['accounts', 'Accounts'],
+    ['transactions', 'Transactions'],
+  ]
+
   return (
-    <header>
-      <h1>Bank Application</h1>
-      <nav aria-label="Main navigation">
-        <button
-          type="button"
-          aria-current={activePage === 'home' ? 'page' : undefined}
-          onClick={() => onNavigate('home')}
-        >
-          Home
-        </button>
-        <button
-          type="button"
-          aria-current={activePage === 'customers' ? 'page' : undefined}
-          onClick={() => onNavigate('customers')}
-        >
-          Customers
-        </button>
-        <button
-          type="button"
-          aria-current={activePage === 'accounts' ? 'page' : undefined}
-          onClick={() => onNavigate('accounts')}
-        >
-          Accounts
-        </button>
-        <button
-          type="button"
-          aria-current={activePage === 'transactions' ? 'page' : undefined}
-          onClick={() => onNavigate('transactions')}
-        >
-          Transactions
-        </button>
+    <header className="sidebar">
+      <div className="brand">
+        <span className="brand-mark" aria-hidden="true">B</span>
+        <div>
+          <p className="brand-name">Bank Application</p>
+          <p className="brand-caption">Administration</p>
+        </div>
+      </div>
+      <nav className="sidebar-nav" aria-label="Main navigation">
+        {navigationItems.map(([page, label]) => (
+          <button
+            key={page}
+            type="button"
+            aria-current={activePage === page ? 'page' : undefined}
+            onClick={() => onNavigate(page)}
+          >
+            {label}
+          </button>
+        ))}
       </nav>
     </header>
   )

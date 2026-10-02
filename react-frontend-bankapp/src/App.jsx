@@ -11,15 +11,17 @@ function App() {
   const [activePage, setActivePage] = useState('home')
 
   return (
-    <div>
+    <div className="app-shell">
       <Header activePage={activePage} onNavigate={setActivePage} />
-      <main>
-        {activePage === 'customers' && <Customers />}
-        {activePage === 'accounts' && <Accounts />}
-        {activePage === 'transactions' && <Transactions />}
-        {activePage === 'home' && <Home />}
-      </main>
-      <Footer />
+      <div className="app-content">
+        <main className="app-main" id="main-content">
+          {activePage === 'customers' && <Customers />}
+          {activePage === 'accounts' && <Accounts />}
+          {activePage === 'transactions' && <Transactions />}
+          {activePage === 'home' && <Home onNavigate={setActivePage} />}
+        </main>
+        <Footer />
+      </div>
     </div>
   )
 }

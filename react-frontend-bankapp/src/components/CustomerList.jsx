@@ -7,7 +7,8 @@ function CustomerList({
   onViewCustomer,
 }) {
   return (
-    <table>
+    <div className="table-wrap">
+      <table>
       <thead>
         <tr>
           <th scope="col">Name</th>
@@ -32,6 +33,7 @@ function CustomerList({
                 Edit
               </button>
               <button
+                className="button-danger"
                 type="button"
                 disabled={isDeleting}
                 onClick={() => onDeleteCustomer(customer.id)}
@@ -42,7 +44,8 @@ function CustomerList({
           </tr>
         ))}
       </tbody>
-    </table>
+      </table>
+    </div>
   )
 }
 

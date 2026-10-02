@@ -1,7 +1,8 @@
 function Footer() {
   return (
-    <footer>
+    <footer className="app-footer">
       <p>Simple Bank Application</p>
+      <p>Administrative workspace</p>
     </footer>
   )
 }

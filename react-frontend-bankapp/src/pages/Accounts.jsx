@@ -376,8 +376,12 @@ function Accounts() {
   }
 
   return (
-    <section>
-      <h2>Accounts</h2>
+    <section className="page">
+      <div className="page-heading">
+        <p className="eyebrow">Account management</p>
+        <h1>Accounts</h1>
+        <p className="page-subtitle">Manage account records and complete banking operations.</p>
+      </div>
       <AccountForm
         customers={customers}
         isCreating={isCreating}
@@ -474,7 +478,7 @@ function Accounts() {
         <p role="alert">Could not load account details: {accountError}</p>
       )}
       {selectedAccount && (
-        <section>
+        <section className="detail-card">
           <h3>Account Details</h3>
           <p>Account ID: {selectedAccount.id}</p>
           <p>Customer ID: {selectedAccount.customer_id}</p>

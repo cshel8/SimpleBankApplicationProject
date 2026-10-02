@@ -143,8 +143,12 @@ function Transactions() {
   }
 
   return (
-    <section>
-      <h2>Transactions</h2>
+    <section className="page">
+      <div className="page-heading">
+        <p className="eyebrow">Audit history</p>
+        <h1>Transactions</h1>
+        <p className="page-subtitle">Review recorded deposits, withdrawals, and transfers.</p>
+      </div>
       <form onSubmit={handleAccountHistory}>
         <h3>Transactions By Account</h3>
         <label htmlFor="transaction-account">Account</label>
@@ -193,7 +197,7 @@ function Transactions() {
         <p role="alert">Could not load transaction details: {transactionError}</p>
       )}
       {selectedTransaction && (
-        <section>
+        <section className="detail-card">
           <h3>Transaction Details</h3>
           <p>Type: {formatTransactionType(selectedTransaction.action_type)}</p>
           <p>Amount: {formatCurrency(selectedTransaction.amount)}</p>

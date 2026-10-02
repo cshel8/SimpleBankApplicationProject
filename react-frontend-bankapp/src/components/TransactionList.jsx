@@ -7,7 +7,8 @@ import {
 
 function TransactionList({ transactions, onViewTransaction }) {
   return (
-    <table>
+    <div className="table-wrap">
+      <table>
       <thead>
         <tr>
           <th scope="col">Type</th>
@@ -36,7 +37,8 @@ function TransactionList({ transactions, onViewTransaction }) {
           </tr>
         ))}
       </tbody>
-    </table>
+      </table>
+    </div>
   )
 }
 

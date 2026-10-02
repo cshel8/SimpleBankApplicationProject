@@ -13,7 +13,8 @@ function AccountList({
   onViewAccount,
 }) {
   return (
-    <table>
+    <div className="table-wrap">
+      <table>
       <thead>
         <tr>
           <th scope="col">Account ID</th>
@@ -42,6 +43,7 @@ function AccountList({
                 Edit
               </button>
               <button
+                className="button-danger"
                 type="button"
                 disabled={isDeleting}
                 onClick={() => onDeleteAccount(account.id)}
@@ -52,7 +54,8 @@ function AccountList({
           </tr>
         ))}
       </tbody>
-    </table>
+      </table>
+    </div>
   )
 }
 

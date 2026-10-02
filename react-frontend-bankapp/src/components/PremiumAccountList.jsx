@@ -6,7 +6,8 @@ function formatAccountType(accountType) {
 
 function PremiumAccountList({ accounts }) {
   return (
-    <table>
+    <div className="table-wrap">
+      <table>
       <thead>
         <tr>
           <th scope="col">Account ID</th>
@@ -25,7 +26,8 @@ function PremiumAccountList({ accounts }) {
           </tr>
         ))}
       </tbody>
-    </table>
+      </table>
+    </div>
   )
 }
 

@@ -222,8 +222,12 @@ function Customers() {
   const displayedCustomers = isSearchActive ? searchResults : customers
 
   return (
-    <section>
-      <h2>Customers</h2>
+    <section className="page">
+      <div className="page-heading">
+        <p className="eyebrow">Directory</p>
+        <h1>Customers</h1>
+        <p className="page-subtitle">Create, find, and maintain customer records.</p>
+      </div>
       <CustomerForm
         isCreating={isCreating}
         onCreateCustomer={handleCreateCustomer}
@@ -284,7 +288,7 @@ function Customers() {
         <p role="alert">Could not load customer details: {customerError}</p>
       )}
       {selectedCustomer && (
-        <section>
+        <section className="detail-card">
           <h3>Customer Details</h3>
           <p>ID: {selectedCustomer.id}</p>
           <p>Name: {selectedCustomer.name}</p>
