@@ -6,7 +6,7 @@ from bson.errors import InvalidId
 from pymongo import ReturnDocument
 
 from database.mongodb import database
-from models.customer import Customer
+from models.customer import Customer, CustomerAuthRecord
 
 
 class CustomerRepository:
@@ -32,13 +32,15 @@ class CustomerRepository:
         self,
         name: str,
         username: str,
-        password_hash: str
+        password_hash: str,
+        role: str = "customer",
     ) -> Customer:
         created_at = datetime.now(timezone.utc)
         result = self.collection.insert_one({
             "name": name,
             "username": username,
             "password_hash": password_hash,
+            "role": role,
             "created_at": created_at,
         })
 
@@ -46,6 +48,7 @@ class CustomerRepository:
             id=str(result.inserted_id),
             name=name,
             username=username,
+            role=role,
             created_at=created_at,
         )
 
@@ -59,6 +62,10 @@ class CustomerRepository:
     def get_customer_by_username(self, username: str) -> Customer | None:
         customer = self.collection.find_one({"username": username})
         return self._to_customer(customer) if customer is not None else None
+
+    def get_auth_record_by_username(self, username: str) -> CustomerAuthRecord | None:
+        customer = self.collection.find_one({"username": username})
+        return self._to_auth_record(customer) if customer is not None else None
 
     def update_customer(
         self,
@@ -95,7 +102,17 @@ class CustomerRepository:
             id=str(customer["_id"]),
             name=customer["name"],
             username=customer["username"],
+            role=customer.get("role", "customer"),
             created_at=CustomerRepository._to_utc(customer.get("created_at")),
+        )
+
+    @staticmethod
+    def _to_auth_record(customer: dict) -> CustomerAuthRecord:
+        return CustomerAuthRecord(
+            id=str(customer["_id"]),
+            username=customer["username"],
+            password_hash=customer["password_hash"],
+            role=customer.get("role", "customer"),
         )
 
     @staticmethod

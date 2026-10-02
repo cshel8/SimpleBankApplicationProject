@@ -8,6 +8,8 @@
 - **Pydantic**: request validation and response serialization.
 - **Uvicorn**: ASGI server used to run the API.
 - **pwdlib / Argon2**: password hashing.
+- **PyJWT**: signs and validates expiring JWT Bearer access tokens using environment-configured secret and algorithm settings.
+- **FastAPI dependencies / HTTP Bearer security**: validates authenticated identities and enforces the current admin-only administrative API boundary.
 - **MongoDB Atlas / PyMongo**: persistent document storage accessed through repositories.
 - **BSON ObjectId and Decimal128**: MongoDB ID and monetary-storage formats, converted at repository boundaries to strings and Python `Decimal` values.
 - **BSON datetime / UTC timestamps**: repositories generate and persist `created_at` values for new customers and accounts.

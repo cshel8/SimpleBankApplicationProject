@@ -1,10 +1,14 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 
-from dependencies import audit_service
+from dependencies import audit_service, require_admin
 from exceptions.audit_exceptions import AuditRecordNotFoundException
 from models.audit import AuditRecord
 
-router = APIRouter(prefix="/api", tags=["Transaction History"])
+router = APIRouter(
+    prefix="/api",
+    tags=["Transaction History"],
+    dependencies=[Depends(require_admin)],
+)
 
 
 @router.get("/transactions", response_model=list[AuditRecord], summary="Get all transaction records")

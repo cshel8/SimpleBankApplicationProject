@@ -1,8 +1,8 @@
 from decimal import Decimal
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 
-from dependencies import account_service
+from dependencies import account_service, require_admin
 from exceptions.account_exceptions import (
     AccountNotFoundException,
     InsufficientFundsException,
@@ -12,7 +12,7 @@ from exceptions.account_exceptions import (
 from exceptions.customer_exceptions import CustomerNotFoundException
 from models.account import Account, AccountCreate, AccountUpdate, MoneyAmount, TransferCreate, TransferResult
 
-router = APIRouter(prefix="/api", tags=["Accounts"])
+router = APIRouter(prefix="/api", tags=["Accounts"], dependencies=[Depends(require_admin)])
 
 
 def account_error_to_http(error: Exception) -> HTTPException:

@@ -3,7 +3,8 @@ from repositories.customer_repository import CustomerRepository
 from repositories.account_repository import AccountRepository
 from exceptions.customer_exceptions import ( 
     CustomerNotFoundException, 
-    DuplicateUsernameException 
+    DuplicateUsernameException,
+    ReservedUsernameException,
 )
 from utilities.password_utils import hash_password
 
@@ -28,6 +29,8 @@ class CustomerService:
         return customer
 
     def create_customer( self, customer_data: CustomerCreate ) -> Customer:
+        if customer_data.username.lower() == "admin":
+            raise ReservedUsernameException("Username is reserved.")
         existing_customer = self.customer_repository.get_customer_by_username( customer_data.username )
         if existing_customer is not None:
             raise DuplicateUsernameException( "Username already exists." )
@@ -44,6 +47,8 @@ class CustomerService:
         if customer is None:
             raise CustomerNotFoundException( "Customer not found." )
         username = customer_data.username if customer_data.username is not None else customer.username
+        if username.lower() == "admin" and customer.role != "admin":
+            raise ReservedUsernameException("Username is reserved.")
         name = customer_data.name if customer_data.name is not None else customer.name
         existing_customer = self.customer_repository.get_customer_by_username(username)
         if existing_customer is not None and existing_customer.id != customer_id:

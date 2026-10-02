@@ -1,12 +1,13 @@
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from exceptions.customer_exceptions import ( 
     CustomerNotFoundException, 
-    DuplicateUsernameException 
+    DuplicateUsernameException,
+    ReservedUsernameException,
 )
 from models.customer import Customer, CustomerCreate, CustomerUpdate
-from dependencies import customer_service
+from dependencies import customer_service, require_admin
 
-router = APIRouter(prefix="/api", tags=["Customers"])
+router = APIRouter(prefix="/api", tags=["Customers"], dependencies=[Depends(require_admin)])
 
 @router.get("/customers", response_model=list[Customer], summary="Get all customers")
 def get_all_customers():
@@ -44,6 +45,8 @@ def create_customer( customer_data: CustomerCreate ):
         return customer_service.create_customer( customer_data )
     except DuplicateUsernameException:
         raise HTTPException( status_code=409, detail="Username already exists." )
+    except ReservedUsernameException as error:
+        raise HTTPException(status_code=409, detail=str(error))
 
 @router.put(
     "/customers/{customer_id}",
@@ -63,6 +66,8 @@ def update_customer( customer_id: str, customer_data: CustomerUpdate ):
 
     except DuplicateUsernameException:
         raise HTTPException( status_code=409, detail="Username already exists." )
+    except ReservedUsernameException as error:
+        raise HTTPException(status_code=409, detail=str(error))
 
 
 @router.delete(

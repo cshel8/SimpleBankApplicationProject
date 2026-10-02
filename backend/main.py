@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from controllers.customer_controller import router as customer_router
 from controllers.account_controller import router as account_router
 from controllers.audit_controller import router as audit_router
+from controllers.auth_controller import router as auth_router
 
 app = FastAPI(title="Simple Bank API", description="A student banking REST API using MongoDB Atlas.")
 
@@ -17,6 +18,7 @@ app.add_middleware(
 app.include_router( customer_router )
 app.include_router(account_router)
 app.include_router(audit_router)
+app.include_router(auth_router)
 
 @app.get("/")
 def root():

@@ -3,3 +3,7 @@ class CustomerNotFoundException( Exception ):
 
 class DuplicateUsernameException( Exception ):
     pass
+
+
+class ReservedUsernameException(Exception):
+    pass
