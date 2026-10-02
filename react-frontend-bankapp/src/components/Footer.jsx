@@ -1,8 +1,8 @@
-function Footer() {
+function Footer({ isAdmin }) {
   return (
     <footer className="app-footer">
       <p>Simple Bank Application</p>
-      <p>Administrative workspace</p>
+      <p>{isAdmin ? 'Administrative workspace' : 'Self-service banking'}</p>
     </footer>
   )
 }

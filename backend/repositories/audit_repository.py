@@ -40,6 +40,24 @@ class AuditRepository:
             }).sort("timestamp", -1)
         ]
 
+    def get_records_for_accounts(self, account_ids: list[str]) -> list[AuditRecord]:
+        object_ids = [
+            object_id
+            for account_id in account_ids
+            if (object_id := self._to_object_id(account_id)) is not None
+        ]
+        if not object_ids:
+            return []
+        return [
+            self._to_audit_record(record)
+            for record in self.collection.find({
+                "$or": [
+                    {"from_account_id": {"$in": object_ids}},
+                    {"to_account_id": {"$in": object_ids}},
+                ]
+            }).sort("timestamp", -1)
+        ]
+
     def create_record(
         self,
         action_type: str,

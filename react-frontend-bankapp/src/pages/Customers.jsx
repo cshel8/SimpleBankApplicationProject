@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   createCustomer,
   deleteCustomer,
@@ -41,6 +41,7 @@ function Customers() {
   const [isSearchActive, setIsSearchActive] = useState(false)
   const [isSearching, setIsSearching] = useState(false)
   const [searchError, setSearchError] = useState(null)
+  const editCustomerFormRef = useRef(null)
 
   useEffect(() => {
     let isCurrent = true
@@ -68,6 +69,12 @@ function Customers() {
       isCurrent = false
     }
   }, [])
+
+  useEffect(() => {
+    if (editingCustomer) {
+      editCustomerFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+  }, [editingCustomer])
 
   async function handleViewCustomer(customerId) {
     setIsCustomerLoading(true)
@@ -239,13 +246,15 @@ function Customers() {
       {updatedCustomer && <p>Customer {updatedCustomer.username} was updated.</p>}
       {updateError && <p role="alert">Could not update customer: {updateError}</p>}
       {editingCustomer && (
-        <EditCustomerForm
-          key={editingCustomer.id}
-          customer={editingCustomer}
-          isSaving={isUpdating}
-          onCancel={handleCancelEdit}
-          onUpdateCustomer={handleUpdateCustomer}
-        />
+        <div className="edit-form-anchor" ref={editCustomerFormRef}>
+          <EditCustomerForm
+            key={editingCustomer.id}
+            customer={editingCustomer}
+            isSaving={isUpdating}
+            onCancel={handleCancelEdit}
+            onUpdateCustomer={handleUpdateCustomer}
+          />
+        </div>
       )}
       <form onSubmit={handleSearch}>
         <h3>Search Customers</h3>

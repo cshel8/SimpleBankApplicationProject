@@ -6,6 +6,7 @@ import {
 } from '../utils/formatTransaction.js'
 
 function TransactionList({ transactions, onViewTransaction }) {
+  const canViewTransaction = typeof onViewTransaction === 'function'
   return (
     <div className="table-wrap">
       <table>
@@ -17,7 +18,7 @@ function TransactionList({ transactions, onViewTransaction }) {
           <th scope="col">To Account</th>
           <th scope="col">Customer</th>
           <th scope="col">Date/Time</th>
-          <th scope="col">Actions</th>
+          {canViewTransaction && <th scope="col">Actions</th>}
         </tr>
       </thead>
       <tbody>
@@ -29,11 +30,13 @@ function TransactionList({ transactions, onViewTransaction }) {
             <td>{formatTransactionIdentifier(transaction.to_account_id)}</td>
             <td>{formatTransactionIdentifier(transaction.customer_id)}</td>
             <td>{formatTransactionTimestamp(transaction.timestamp)}</td>
-            <td>
-              <button type="button" onClick={() => onViewTransaction(transaction.id)}>
-                View
-              </button>
-            </td>
+            {canViewTransaction && (
+              <td>
+                <button type="button" onClick={() => onViewTransaction(transaction.id)}>
+                  View
+                </button>
+              </td>
+            )}
           </tr>
         ))}
       </tbody>

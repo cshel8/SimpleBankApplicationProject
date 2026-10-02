@@ -31,25 +31,28 @@ function AccountList({
             <td>{account.customer_id}</td>
             <td>{formatAccountType(account.account_type)}</td>
             <td>{formatCurrency(account.balance)}</td>
-            <td>
-              <button type="button" onClick={() => onViewAccount(account.id)}>
-                View
-              </button>
-              <button
-                type="button"
-                disabled={isUpdating}
-                onClick={() => onEditAccount(account.id)}
-              >
-                Edit
-              </button>
-              <button
-                className="button-danger"
-                type="button"
-                disabled={isDeleting}
-                onClick={() => onDeleteAccount(account.id)}
-              >
-                {isDeleting ? 'Deleting account...' : 'Delete'}
-              </button>
+            <td className="table-actions">
+              <div className="table-action-buttons">
+                <button className="table-action-button" type="button" onClick={() => onViewAccount(account.id)}>
+                  View
+                </button>
+                <button
+                  className="table-action-button"
+                  type="button"
+                  disabled={isUpdating}
+                  onClick={() => onEditAccount(account.id)}
+                >
+                  Edit
+                </button>
+                <button
+                  className="table-action-button button-danger"
+                  type="button"
+                  disabled={isDeleting}
+                  onClick={() => onDeleteAccount(account.id)}
+                >
+                  {isDeleting ? 'Deleting...' : 'Delete'}
+                </button>
+              </div>
             </td>
           </tr>
         ))}

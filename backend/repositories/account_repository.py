@@ -24,6 +24,15 @@ class AccountRepository:
     def get_all_accounts(self) -> list[Account]:
         return [self._to_account(account) for account in self.collection.find({})]
 
+    def get_accounts_for_customer(self, customer_id: str) -> list[Account]:
+        customer_object_id = self._to_object_id(customer_id)
+        if customer_object_id is None:
+            return []
+        return [
+            self._to_account(account)
+            for account in self.collection.find({"customer_id": customer_object_id})
+        ]
+
     def get_premium_accounts(self, threshold: Decimal) -> list[Account]:
         return [
             self._to_account(account)

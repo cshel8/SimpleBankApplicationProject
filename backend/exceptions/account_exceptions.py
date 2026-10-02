@@ -12,3 +12,7 @@ class InsufficientFundsException(Exception):
 
 class SameAccountTransferException(Exception):
     pass
+
+
+class AccountOwnershipException(Exception):
+    pass

@@ -1,6 +1,7 @@
 from decimal import Decimal
 
 from exceptions.account_exceptions import (
+    AccountOwnershipException,
     AccountNotFoundException,
     InsufficientFundsException,
     InvalidAmountException,
@@ -26,6 +27,9 @@ class AccountService:
 
     def get_all_accounts(self) -> list[Account]:
         return self.account_repository.get_all_accounts()
+
+    def get_accounts_for_customer(self, customer_id: str) -> list[Account]:
+        return self.account_repository.get_accounts_for_customer(customer_id)
 
     def get_premium_accounts(self, threshold: Decimal) -> list[Account]:
         if threshold < 0:
@@ -77,6 +81,10 @@ class AccountService:
             raise AccountNotFoundException("Account not found.")
         return updated_account
 
+    def deposit_for_customer(self, customer_id: str, account_id: str, amount: Decimal) -> Account:
+        self._get_owned_account(customer_id, account_id)
+        return self.deposit(account_id, amount)
+
     def withdraw(self, account_id: str, amount: Decimal) -> Account:
         self._validate_amount(amount)
         account = self.get_account_by_id(account_id)
@@ -91,6 +99,10 @@ class AccountService:
             self.get_account_by_id(account_id)
             raise InsufficientFundsException("Insufficient funds.")
         return updated_account
+
+    def withdraw_for_customer(self, customer_id: str, account_id: str, amount: Decimal) -> Account:
+        self._get_owned_account(customer_id, account_id)
+        return self.withdraw(account_id, amount)
 
     def transfer(self, transfer_data: TransferCreate) -> TransferResult:
         self._validate_amount(transfer_data.amount)
@@ -114,6 +126,17 @@ class AccountService:
             from_account=source_account,
             to_account=destination_account,
         )
+
+    def transfer_for_customer(self, customer_id: str, transfer_data: TransferCreate) -> TransferResult:
+        self._get_owned_account(customer_id, transfer_data.from_account_id)
+        self._get_owned_account(customer_id, transfer_data.to_account_id)
+        return self.transfer(transfer_data)
+
+    def _get_owned_account(self, customer_id: str, account_id: str) -> Account:
+        account = self.get_account_by_id(account_id)
+        if account.customer_id != customer_id:
+            raise AccountOwnershipException("You are not authorized to access this account.")
+        return account
 
     @staticmethod
     def _validate_amount(amount: Decimal) -> None:

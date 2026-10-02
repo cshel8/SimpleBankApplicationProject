@@ -5,9 +5,13 @@ import controllers.account_controller as account_controller
 import controllers.audit_controller as audit_controller
 import controllers.auth_controller as auth_controller
 import controllers.customer_controller as customer_controller
+import controllers.self_service_controller as self_service_controller
 import dependencies
+from exceptions.account_exceptions import AccountNotFoundException, AccountOwnershipException
 from exceptions.customer_exceptions import CustomerNotFoundException
 from main import app
+from models.account import Account, TransferCreate, TransferResult
+from models.audit import AuditRecord
 from models.customer import Customer, CustomerAuthRecord
 from services.auth_service import AuthService
 from services.customer_service import CustomerService
@@ -69,6 +73,77 @@ class ReadOnlyAuditService:
         return []
 
 
+class SelfServiceAccountService:
+    def __init__(self):
+        self.accounts = {
+            "first-checking": Account(
+                id="first-checking", customer_id="customer-1", account_type="checking", balance=100
+            ),
+            "first-savings": Account(
+                id="first-savings", customer_id="customer-1", account_type="savings", balance=25
+            ),
+            "second-checking": Account(
+                id="second-checking", customer_id="customer-2", account_type="checking", balance=50
+            ),
+        }
+
+    def get_accounts_for_customer(self, customer_id):
+        return [account for account in self.accounts.values() if account.customer_id == customer_id]
+
+    def _owned_account(self, customer_id, account_id):
+        account = self.accounts.get(account_id)
+        if account is None:
+            raise AccountNotFoundException()
+        if account.customer_id != customer_id:
+            raise AccountOwnershipException()
+        return account
+
+    def deposit_for_customer(self, customer_id, account_id, amount):
+        account = self._owned_account(customer_id, account_id)
+        account.balance += amount
+        return account
+
+    def withdraw_for_customer(self, customer_id, account_id, amount):
+        account = self._owned_account(customer_id, account_id)
+        account.balance -= amount
+        return account
+
+    def transfer_for_customer(self, customer_id, transfer_data):
+        source = self._owned_account(customer_id, transfer_data.from_account_id)
+        destination = self._owned_account(customer_id, transfer_data.to_account_id)
+        source.balance -= transfer_data.amount
+        destination.balance += transfer_data.amount
+        return TransferResult(from_account=source, to_account=destination)
+
+
+class SelfServiceAuditService:
+    def __init__(self):
+        self.records = [
+            AuditRecord(
+                id="first-record",
+                action_type="deposit",
+                customer_id="customer-1",
+                to_account_id="first-checking",
+                amount=10,
+                timestamp="2026-01-01T00:00:00Z",
+            ),
+            AuditRecord(
+                id="second-record",
+                action_type="deposit",
+                customer_id="customer-2",
+                to_account_id="second-checking",
+                amount=10,
+                timestamp="2026-01-01T00:00:00Z",
+            ),
+        ]
+
+    def get_records_for_accounts(self, account_ids):
+        return [
+            record for record in self.records
+            if record.from_account_id in account_ids or record.to_account_id in account_ids
+        ]
+
+
 @pytest.fixture
 def authorization_client(monkeypatch):
     repository = AuthorizationFakeCustomerRepository()
@@ -78,6 +153,8 @@ def authorization_client(monkeypatch):
     monkeypatch.setattr(customer_controller, "customer_service", ReadOnlyCustomerService())
     monkeypatch.setattr(account_controller, "account_service", ReadOnlyAccountService())
     monkeypatch.setattr(audit_controller, "audit_service", ReadOnlyAuditService())
+    monkeypatch.setattr(self_service_controller, "account_service", SelfServiceAccountService())
+    monkeypatch.setattr(self_service_controller, "audit_service", SelfServiceAuditService())
     return TestClient(app), service
 
 
@@ -182,3 +259,72 @@ def test_openapi_marks_administrative_routes_as_bearer_protected():
     assert "security" not in schema["paths"]["/api/auth/register"]["post"]
     assert "security" not in schema["paths"]["/api/auth/login"]["post"]
     assert schema["paths"]["/api/auth/me"]["get"]["security"] == [{"HTTPBearer": []}]
+
+
+def test_customer_self_service_routes_enforce_authenticated_account_ownership(authorization_client):
+    client, _ = authorization_client
+    first_token = register_and_login(client, "firstcustomer")
+    second_token = register_and_login(client, "secondcustomer")
+
+    assert client.get("/api/me/accounts").status_code == 401
+    assert client.get("/api/me/transactions").status_code == 401
+
+    own_accounts = client.get("/api/me/accounts", headers=auth_header(first_token))
+    assert own_accounts.status_code == 200
+    assert [account["id"] for account in own_accounts.json()] == ["first-checking", "first-savings"]
+
+    own_transactions = client.get("/api/me/transactions", headers=auth_header(first_token))
+    assert own_transactions.status_code == 200
+    assert [record["id"] for record in own_transactions.json()] == ["first-record"]
+
+    assert client.post(
+        "/api/me/accounts/first-checking/deposit",
+        json={"amount": "10.00"},
+        headers=auth_header(first_token),
+    ).status_code == 200
+    assert client.post(
+        "/api/me/accounts/second-checking/deposit",
+        json={"amount": "10.00"},
+        headers=auth_header(first_token),
+    ).status_code == 403
+    assert client.post(
+        "/api/me/accounts/first-checking/withdraw",
+        json={"amount": "5.00"},
+        headers=auth_header(first_token),
+    ).status_code == 200
+    assert client.post(
+        "/api/me/accounts/second-checking/withdraw",
+        json={"amount": "5.00"},
+        headers=auth_header(first_token),
+    ).status_code == 403
+
+    transfer_response = client.post(
+        "/api/me/accounts/transfer",
+        json={
+            "from_account_id": "first-checking",
+            "to_account_id": "first-savings",
+            "amount": "10.00",
+        },
+        headers=auth_header(first_token),
+    )
+    assert transfer_response.status_code == 200
+    assert client.post(
+        "/api/me/accounts/transfer",
+        json={
+            "from_account_id": "second-checking",
+            "to_account_id": "first-savings",
+            "amount": "1.00",
+        },
+        headers=auth_header(first_token),
+    ).status_code == 403
+    assert client.post(
+        "/api/me/accounts/transfer",
+        json={
+            "from_account_id": "first-checking",
+            "to_account_id": "second-checking",
+            "amount": "1.00",
+        },
+        headers=auth_header(first_token),
+    ).status_code == 403
+
+    assert client.get("/api/me/accounts", headers=auth_header(second_token)).json()[0]["id"] == "second-checking"

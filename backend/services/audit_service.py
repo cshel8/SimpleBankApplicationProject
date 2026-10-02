@@ -18,3 +18,6 @@ class AuditService:
 
     def get_records_for_account(self, account_id: str) -> list[AuditRecord]:
         return self.audit_repository.get_records_for_account(account_id)
+
+    def get_records_for_accounts(self, account_ids: list[str]) -> list[AuditRecord]:
+        return self.audit_repository.get_records_for_accounts(account_ids)

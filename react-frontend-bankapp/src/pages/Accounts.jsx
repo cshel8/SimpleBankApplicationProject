@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   createAccount,
   deleteAccount,
@@ -67,6 +67,7 @@ function Accounts() {
   const [isTransferring, setIsTransferring] = useState(false)
   const [transferError, setTransferError] = useState(null)
   const [transferResult, setTransferResult] = useState(null)
+  const editAccountFormRef = useRef(null)
 
   useEffect(() => {
     let isCurrent = true
@@ -94,6 +95,12 @@ function Accounts() {
       isCurrent = false
     }
   }, [])
+
+  useEffect(() => {
+    if (editingAccount) {
+      editAccountFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+  }, [editingAccount])
 
   useEffect(() => {
     let isCurrent = true
@@ -398,13 +405,15 @@ function Accounts() {
       {deletedAccount && <p>Account {deletedAccount.id} was deleted.</p>}
       {deleteError && <p role="alert">Could not delete account: {deleteError}</p>}
       {editingAccount && (
-        <EditAccountForm
-          key={editingAccount.id}
-          account={editingAccount}
-          isSaving={isUpdating}
-          onCancel={handleCancelEdit}
-          onUpdateAccount={handleUpdateAccount}
-        />
+        <div className="edit-form-anchor" ref={editAccountFormRef}>
+          <EditAccountForm
+            key={editingAccount.id}
+            account={editingAccount}
+            isSaving={isUpdating}
+            onCancel={handleCancelEdit}
+            onUpdateAccount={handleUpdateAccount}
+          />
+        </div>
       )}
       <DepositForm
         accounts={accounts}

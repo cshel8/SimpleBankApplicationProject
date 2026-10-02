@@ -1,10 +1,16 @@
-function Header({ activePage, onNavigate }) {
-  const navigationItems = [
-    ['home', 'Home'],
-    ['customers', 'Customers'],
-    ['accounts', 'Accounts'],
-    ['transactions', 'Transactions'],
-  ]
+function Header({ activePage, currentUser, isAdmin, onLogout, onNavigate }) {
+  const navigationItems = isAdmin
+    ? [
+        ['home', 'Home'],
+        ['customers', 'Customers'],
+        ['accounts', 'Accounts'],
+        ['transactions', 'Transactions'],
+      ]
+    : [
+        ['home', 'Home'],
+        ['my-accounts', 'My Accounts'],
+        ['my-transactions', 'My Transactions'],
+      ]
 
   return (
     <header className="sidebar">
@@ -12,7 +18,7 @@ function Header({ activePage, onNavigate }) {
         <span className="brand-mark" aria-hidden="true">B</span>
         <div>
           <p className="brand-name">Bank Application</p>
-          <p className="brand-caption">Administration</p>
+          <p className="brand-caption">{isAdmin ? 'Administration' : 'Self-service banking'}</p>
         </div>
       </div>
       <nav className="sidebar-nav" aria-label="Main navigation">
@@ -27,6 +33,11 @@ function Header({ activePage, onNavigate }) {
           </button>
         ))}
       </nav>
+      <div className="user-menu">
+        <p className="user-name">{currentUser.username}</p>
+        <p className="user-role">{currentUser.role}</p>
+        <button type="button" onClick={onLogout}>Sign out</button>
+      </div>
     </header>
   )
 }

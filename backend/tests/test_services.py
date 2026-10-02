@@ -6,7 +6,7 @@ from bson import ObjectId
 from bson.decimal128 import Decimal128
 from pydantic import ValidationError
 
-from exceptions.account_exceptions import InsufficientFundsException
+from exceptions.account_exceptions import AccountOwnershipException, InsufficientFundsException
 from exceptions.customer_exceptions import CustomerNotFoundException, DuplicateUsernameException
 from models.account import Account, AccountCreate, AccountUpdate, TransferCreate
 from models.audit import AuditRecord
@@ -44,6 +44,8 @@ class FakeCustomerRepository:
 class FakeAccountRepository:
     def __init__(self): self.accounts = {}; self.deleted_customer_ids = []
     def get_all_accounts(self): return list(self.accounts.values())
+    def get_accounts_for_customer(self, customer_id):
+        return [account for account in self.accounts.values() if account.customer_id == customer_id]
     def get_premium_accounts(self, threshold): return [a for a in self.accounts.values() if a.balance >= threshold]
     def get_account_by_id(self, account_id): return self.accounts.get(account_id)
     def create_account(self, customer_id, account_type, balance):
@@ -88,6 +90,11 @@ class FakeAuditRepository:
     def get_all_records(self): return list(self.records)
     def get_record_by_id(self, record_id): return next((r for r in self.records if r.id == record_id), None)
     def get_records_for_account(self, account_id): return [r for r in self.records if account_id in (r.from_account_id, r.to_account_id)]
+    def get_records_for_accounts(self, account_ids):
+        return [
+            record for record in self.records
+            if record.from_account_id in account_ids or record.to_account_id in account_ids
+        ]
 
 
 @pytest.fixture
@@ -148,6 +155,60 @@ def test_account_creation_requires_existing_customer_and_account_type_is_limited
         account_service.create_account("missing", AccountCreate())
     with pytest.raises(ValidationError):
         AccountCreate(account_type="premium")
+
+
+def test_customer_self_service_ownership_and_transaction_filtering(services):
+    customer_service, account_service, audits = services
+    first_customer = customer_service.create_customer(
+        CustomerCreate(name="First", username="firstcustomer", password="securepass123")
+    )
+    second_customer = customer_service.create_customer(
+        CustomerCreate(name="Second", username="secondcustomer", password="securepass123")
+    )
+    first_source = account_service.create_account(first_customer.id, AccountCreate(opening_balance=Decimal("100")))
+    first_destination = account_service.create_account(first_customer.id, AccountCreate(opening_balance=Decimal("10")))
+    second_account = account_service.create_account(second_customer.id, AccountCreate(opening_balance=Decimal("50")))
+
+    assert account_service.get_accounts_for_customer(first_customer.id) == [first_source, first_destination]
+    assert account_service.deposit_for_customer(first_customer.id, first_source.id, Decimal("20")).balance == Decimal("120")
+    assert account_service.withdraw_for_customer(first_customer.id, first_source.id, Decimal("5")).balance == Decimal("115")
+    result = account_service.transfer_for_customer(
+        first_customer.id,
+        TransferCreate(
+            from_account_id=first_source.id,
+            to_account_id=first_destination.id,
+            amount=Decimal("15"),
+        ),
+    )
+    assert (result.from_account.balance, result.to_account.balance) == (Decimal("100"), Decimal("25"))
+
+    with pytest.raises(AccountOwnershipException):
+        account_service.deposit_for_customer(first_customer.id, second_account.id, Decimal("1"))
+    with pytest.raises(AccountOwnershipException):
+        account_service.withdraw_for_customer(first_customer.id, second_account.id, Decimal("1"))
+    with pytest.raises(AccountOwnershipException):
+        account_service.transfer_for_customer(
+            first_customer.id,
+            TransferCreate(
+                from_account_id=first_source.id,
+                to_account_id=second_account.id,
+                amount=Decimal("1"),
+            ),
+        )
+    with pytest.raises(AccountOwnershipException):
+        account_service.transfer_for_customer(
+            first_customer.id,
+            TransferCreate(
+                from_account_id=second_account.id,
+                to_account_id=first_destination.id,
+                amount=Decimal("1"),
+            ),
+        )
+
+    own_records = AuditService(audits).get_records_for_accounts(
+        [first_source.id, first_destination.id]
+    )
+    assert [record.action_type for record in own_records] == ["deposit", "withdrawal", "transfer"]
 
 
 class InsertOnlyCollection:

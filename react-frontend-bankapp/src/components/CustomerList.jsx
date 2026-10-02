@@ -21,25 +21,28 @@ function CustomerList({
           <tr key={customer.id}>
             <td>{customer.name}</td>
             <td>{customer.username}</td>
-            <td>
-              <button type="button" onClick={() => onViewCustomer(customer.id)}>
-                View
-              </button>
-              <button
-                type="button"
-                disabled={isUpdating}
-                onClick={() => onEditCustomer(customer.id)}
-              >
-                Edit
-              </button>
-              <button
-                className="button-danger"
-                type="button"
-                disabled={isDeleting}
-                onClick={() => onDeleteCustomer(customer.id)}
-              >
-                {isDeleting ? 'Deleting customer...' : 'Delete'}
-              </button>
+            <td className="table-actions">
+              <div className="table-action-buttons">
+                <button className="table-action-button" type="button" onClick={() => onViewCustomer(customer.id)}>
+                  View
+                </button>
+                <button
+                  className="table-action-button"
+                  type="button"
+                  disabled={isUpdating}
+                  onClick={() => onEditCustomer(customer.id)}
+                >
+                  Edit
+                </button>
+                <button
+                  className="table-action-button button-danger"
+                  type="button"
+                  disabled={isDeleting}
+                  onClick={() => onDeleteCustomer(customer.id)}
+                >
+                  {isDeleting ? 'Deleting...' : 'Delete'}
+                </button>
+              </div>
             </td>
           </tr>
         ))}

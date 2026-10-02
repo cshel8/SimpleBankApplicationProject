@@ -2,16 +2,21 @@
 
 - **Python**: application language.
 - **FastAPI**: HTTP framework and automatic OpenAPI/Swagger documentation.
-- **React / Vite**: local frontend development environment, connected to FastAPI over HTTP. It uses a reusable responsive application shell with desktop sidebar navigation and simple state-based navigation between Home, Customers, Accounts, and Transactions; React Router is not needed yet.
-- **Browser fetch()**: native frontend API used by `DataService.js` for customer/account operations and transaction-history read requests to FastAPI.
+- **React / Vite**: local frontend development environment with state-based navigation, reusable Header/Footer components, Login/Register UI, and role-aware administrative navigation. React Router is not used.
+- **JavaScript / HTML / CSS**: frontend component, form, layout, and responsive presentation technologies.
+- **Browser fetch()**: native frontend API used by `DataService.js` for public authentication requests and protected customer, account, and transaction requests to FastAPI.
+- **sessionStorage**: retains only the access token for the current browser session; React validates it through `/api/auth/me` before restoring user identity.
 - **CORS middleware**: permits the two local Vite development origins to call the API from a browser.
 - **Pydantic**: request validation and response serialization.
 - **Uvicorn**: ASGI server used to run the API.
 - **pwdlib / Argon2**: password hashing.
 - **PyJWT**: signs and validates expiring JWT Bearer access tokens using environment-configured secret and algorithm settings.
 - **FastAPI dependencies / HTTP Bearer security**: validates authenticated identities and enforces the current admin-only administrative API boundary.
+- **Service-layer ownership authorization**: uses the authenticated identity to scope customer self-service accounts, transactions, deposits, withdrawals, and transfers.
 - **MongoDB Atlas / PyMongo**: persistent document storage accessed through repositories.
 - **BSON ObjectId and Decimal128**: MongoDB ID and monetary-storage formats, converted at repository boundaries to strings and Python `Decimal` values.
 - **BSON datetime / UTC timestamps**: repositories generate and persist `created_at` values for new customers and accounts.
 - **MongoDB sessions/transactions**: keep each money movement and its audit record atomic.
 - **python-dotenv**: loads local MongoDB configuration from ignored environment files.
+- **pytest**: backend automated testing framework.
+- **Swagger/OpenAPI and Postman**: API schema/documentation and manual REST-testing tools.
